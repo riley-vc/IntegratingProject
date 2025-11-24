@@ -5,12 +5,13 @@
 **Course:** CSC612M - Advanced Computer Architecture  
 **Group:** 5  
 
-## 👥 Team Members
+## Group Members
 * **Carandang, Matthew Ryan**
 * **Veracruz, Sean Riley**
 * **Yap, Rafael Subo**
 
-* ---
+---
+
 ## Abstract
 The **Kuwahara filter** is an advanced, non-linear, edge-preserving smoothing filter used in image processing to reduce noise while maintaining sharp edges. Unlike standard Gaussian blurs, the Kuwahara filter calculates the mean and variance of four overlapping sub-regions for every single pixel, making it computationally exhaustive on sequential CPUs.
 
