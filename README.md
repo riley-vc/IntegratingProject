@@ -55,8 +55,6 @@ To accurately measure the performance gains of our GPU kernel, we implemented th
 
   * Calculates the mean and variance for the four sub-quadrants (top-left, top-right, bottom-left, bottom-right) for each pixel.
 
-  * Python is excellent for prototyping. But this implementation highlights the significant overhead of interpreted loops for per-pixel image processing tasks, making it the slowest of the three.
-
 2. C++ Implementation
 
 * Provides a "fair" high-performance CPU baseline. Unlike Python, C++ is compiled and optimized, which represents how a standard CPU-based image processing application would typically run.
@@ -66,8 +64,6 @@ To accurately measure the performance gains of our GPU kernel, we implemented th
 * Written in standard C++11.
 
   * Utilizes the exact same sliding window logic as the CUDA kernel but runs sequentially on the host CPU.
-
-  * Compiled with optimization flags (e.g., -O3) to ensure maximum CPU efficiency.
 
   * The C++ implementation is still bound by the sequential nature of the CPU processing one pixel (or small groups of pixels) at a time, scaling poorly as image resolution or kernel size increases.
 
