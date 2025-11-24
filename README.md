@@ -95,6 +95,72 @@ To build and run this project, you need:
     * (Optional) `stb_image` if OpenCV is not used.
 
 ## Results and Discussion
+### Overview of Setup 
+* **Test image:** A portrait image from wikipedia is used as the primary test image. The image was also used in https://github.com/yoch/pykuwahara, one of the primary references and baselines for this project, hence the developers decided to use the same image for reference. The image has a size of 512 x 512 pixels and approximately 462 KB.
+  <div align ="center">
+  <img width="512" height="512" alt="Lenna_(test_image)" src="https://github.com/user-attachments/assets/f9c3d889-7ac3-44ed-81f9-c0e8c80ab6dc" />
+  </div>
+* **Kernel sizes evaluated**: [3, 5, 7, 9, 11]
+* **Hardware specifications**: The testing and data collection were performed on the Google Colab environment, providing a standardized cloud environment and set of hardware for testing
+  * CPU: Intel(R) Xeon(R) CPU @ 2.00GHz (2 Cores)
+  * GPU: NVIDIA Tesla T4 — 15 GB VRAM, Driver 550.54.15, CUDA 12.4 (nvcc 12.5)
+* **Execution time tools**:
+  * C++ implementation: *std::chrono::high_resolution_clock*
+  * Python implementation: *time.perf_counter()*
+  * CUDA GPU implementation: *cudaEventRecord(start), kernel launch, cudaEventRecord(stop), cudaEventElapsedTime(&ms, start, stop)*
+### Execution Time Summary and Performance vs. Kernel Size
+
+<div align = "center">
+
+**Execution Time Table**
+| Kernel | CPU C++ (ms) | GPU CUDA (ms) | Python (ms) |
+|:------:|:------------:|:-------------:|:-----------:|
+| 3      | 48.88        | 0.11          | 77.76       |
+| 5      | 83.72        | 0.16          | 72.80       |
+| 7      | 142.15       | 0.22          | 103.31      |
+| 9      | 274.89       | 0.31          | 153.33      |
+| 11     | 485.24       | 0.41          | 213.09      |
+
+</div>
+<div align = "center">
+
+**Speedup Table**
+| Kernel | CPU C++ → CUDA | Python → CUDA |
+|-------:|---------------:|--------------:|
+| 3      | 444×          | 707×          |
+| 5      | 523×          | 455×          |
+| 7      | 646×          | 470×          |
+| 9      | 887×          | 495×          |
+| 11     | 1183×         | 520×          |
+</div>
+
+As expected, the execution time for the CPU implementations increases significantly with the kernel size. The Python implementation shows moderate scaling due to interpreter overhead and sequential execution, ranging from 77.76 ms for a 3×3 kernel to 213.09 ms for an 11×11 kernel. The C++ implementation, although optimized, still exhibits steep growth, from 48.88 ms at 3×3 to 485.24 ms at 11×11, illustrating the inherent computational cost of the nested-loop structure. In contrast, the GPU CUDA implementation maintains extremely low execution times, ranging only from 0.11 ms to 0.41 ms, regardless of kernel size. This demonstrates that parallelization on the GPU effectively decouples execution time from kernel size, thanks to per-pixel threading and shared memory optimizations. Overall, the GPU provides orders-of-magnitude speedup over both CPU implementations, particularly for larger kernels where the computational load is greatest. The results also clearly demonstrate the tremendous performance gains achieved through GPU parallelization. The CUDA implementation consistently outperforms both CPU-based implementations, achieving speedups of up to 1180× relative to optimized C++ code and up to 700× relative to Python. As kernel size increases, the computational cost of the sequential CPU algorithms grows rapidly due to the nested sliding-window operations, whereas the GPU execution time remains nearly constant. This highlights the efficiency of the SIMT execution model and shared memory optimizations, which allow hundreds of threads to process individual pixels simultaneously. The consistent low execution times across all tested kernel sizes show that the GPU implementation scales far better than the CPU, making it highly suitable for computationally intensive, edge-preserving filters like Kuwahara.
+
+### System-Level Analysis
+stuff from nvprof
+### Image Quality Comparison
+<div align = "center">
+ 
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/4a9165f5-9961-4e4a-a1de-cb7603e261a9" width="150"/></td>
+    <td><img src="https://github.com/user-attachments/assets/83cc130d-446a-4876-a7c9-80a5fa3cc358" width="150"/></td>
+    <td><img src="https://github.com/user-attachments/assets/fa80e7c7-a3ee-4722-a544-2cbfd2eeba74" width="150"/></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/0c3d12ee-f901-405a-a0fe-2f9ad3cb8a95" width="150"/></td>
+    <td><img src="https://github.com/user-attachments/assets/d42da223-c6cd-462b-b146-5d46d68fa269" width="150"/></td>
+  </tr>
+</table>
+</div>
+At a kernel size of 7×7, all three implementations—CUDA, C++, and Python—produce virtually identical outputs. The filter effectively smooths noise while preserving edges, and any minor differences are imperceptible, arising only from rounding or implementation-specific pixel calculations. This confirms the correctness of the GPU-accelerated version relative to the CPU baselines.
+
+### Interpretation & Justification
+
+The Kuwahara filter is characterized by high arithmetic intensity and inherently independent pixel computations, making it an ideal candidate for SIMT-based GPU acceleration. Each output pixel can be computed independently, providing a perfect parallelism grain. The use of shared memory tiling drastically reduces redundant global memory accesses by approximately K² for a kernel of size K×K, allowing threads within a block to efficiently share data. 
+
+CPU performance is inherently limited by sequential execution and repeated global memory accesses, while Python suffers additional overhead from interpretation and dynamic memory management. In contrast, the GPU implementation leverages massive parallelism, low-latency shared memory, and efficient thread scheduling, resulting in significant speedups while still producing nearly identical outputs. This demonstrates that the Kuwahara filter aligns exceptionally well with the GPU execution model.
+
 
 
 
