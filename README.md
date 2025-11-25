@@ -313,4 +313,7 @@ This portion tackles the different problems encountered by the group members and
 ## 6 References
 - https://github.com/yoch/pykuwahara
 - K. Bartyzel, "[Adaptive Kuwahara filter](https://link.springer.com/article/10.1007/s11760-015-0791-3)," *Signal, Image and Video Processing*, vol. 10, pp. 663-670, 2015.
+- NVIDIA (2024). CUDA C++ Programming Guide.
+- Harris, M. (2013). Using Shared Memory in CUDA C/C++. NVIDIA Developer Blog
+- Kuwahara, M., Hachimura, K., Eiho, S., & Kinoshita, M. (1976). Processing of RI-Angiocardiographic Images. In Digital Processing of Biomedical Images.
   
