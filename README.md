@@ -312,4 +312,5 @@ This portion tackles the different problems encountered by the group members and
 
 ## 6 References
 - https://github.com/yoch/pykuwahara
-
+- K. Bartyzel, "[Adaptive Kuwahara filter](https://link.springer.com/article/10.1007/s11760-015-0791-3)," *Signal, Image and Video Processing*, vol. 10, pp. 663-670, 2015.
+  
