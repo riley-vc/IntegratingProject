@@ -43,6 +43,7 @@ The repository includes a multitude of files that are important for the project.
 | `kuwahara_gpu_optimized.cu` | Contains the **Optimized** `CUDA C++` implementation of the kuwahara filter |
 | `kuwahara_gpu.nsys-rep` | Contains the report for the `CUDA C++` implementation of the kuwahara filter that can be viewed using Nvidia NSight Systems |
 | `kuwahara_gpu_optimized.nsys-rep` | Contains the report for the **Optimized** `CUDA C++` implementation of the kuwahara filter that can be viewed using Nvidia NSight Systems |
+| `DemoVideo.txt` | Contains the Google drive link to the demo video |
 
 Included also are `images`, which are the images that are either generated or used in testing the Kuwahara filter:
 
