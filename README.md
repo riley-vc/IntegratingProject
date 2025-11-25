@@ -10,6 +10,7 @@
 * **Veracruz, Sean Riley**
 * **Yap, Rafael Subo**
 
+**Demo Video Link**: https://drive.google.com/file/d/1GltDlKVH8y-tmGSC0Wji8zEam3Lj0MnG/view?usp=sharing
 ---
 
 ## 1.1 Abstract
@@ -129,7 +130,7 @@ To filter a single pixel, the thread must read many neighboring pixels. For exam
 ### 3.2 Execution Time Summary and Performance vs. Kernel Size
 
 <div align = "center">
-**Outputs of different Kernels**
+Outputs of different Kernels
  
 <table>
   <tr>
@@ -308,9 +309,6 @@ This portion tackles the different problems encountered by the group members and
 
 ---
 
-## 6 Demo Video Link
-
-
-## 7 References
+## 76 References
 - 
 
