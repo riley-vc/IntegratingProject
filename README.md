@@ -119,26 +119,26 @@ if (x < width && y < height) {
 
 <div align = "center">
 
-**Execution Time Table**
-| Kernel | CPU C++ (ms) | GPU CUDA (ms) | Python (ms) |
-|:------:|:------------:|:-------------:|:-----------:|
-| 3      | 48.88        | 0.11          | 77.76       |
-| 5      | 83.72        | 0.16          | 72.80       |
-| 7      | 142.15       | 0.22          | 103.31      |
-| 9      | 274.89       | 0.31          | 153.33      |
-| 11     | 485.24       | 0.41          | 213.09      |
+**Average Execution Time Table (across 10 runs)**
+|  K  |   CPU   |  GPU   | GPU (Opt) | Python |
+|:---:|:-------:|:------:|:---------:|:------:|
+|  3  |  47.80  | 0.11   |   0.11    | 80.63  |
+|  5  |  77.24  | 0.16   |   0.15    | 76.38  |
+|  7  | 101.21  | 0.22   |   0.21    | 94.36  |
+|  9  | 154.21  | 0.30   |   0.30    | 94.09  |
+| 11  | 198.14  | 0.41   |   0.40    | 84.73  |
 
 </div>
 <div align = "center">
 
 **Speedup Table**
-| Kernel | CPU C++ → CUDA | Python → CUDA |
-|-------:|---------------:|--------------:|
-| 3      | 444×          | 707×          |
-| 5      | 523×          | 455×          |
-| 7      | 646×          | 470×          |
-| 9      | 887×          | 495×          |
-| 11     | 1183×         | 520×          |
+| Kernel | Speedup GPU vs CPU | Speedup GPU Opt vs CPU | Speedup GPU vs Python | Speedup GPU Opt vs Python |
+|:------:|:-------------------:|:-----------------------:|:----------------------:|:---------------------------:|
+|   3    |       434.55×       |        434.55×         |        733.03×         |          733.03×           |
+|   5    |       476.77×       |        514.90×         |        471.49×         |          509.21×           |
+|   7    |       460.05×       |        472.95×         |        428.89×         |          440.91×           |
+|   9    |       510.62×       |        514.02×         |        311.57×         |          313.65×           |
+|  11    |       483.27×       |        490.45×         |        206.67×         |          209.74×           |
 </div>
 
 As expected, the execution time for the CPU implementations increases significantly with the kernel size. The Python implementation shows moderate scaling due to interpreter overhead and sequential execution, ranging from 77.76 ms for a 3×3 kernel to 213.09 ms for an 11×11 kernel. The C++ implementation, although optimized, still exhibits steep growth, from 48.88 ms at 3×3 to 485.24 ms at 11×11, illustrating the inherent computational cost of the nested-loop structure. In contrast, the GPU CUDA implementation maintains extremely low execution times, ranging only from 0.11 ms to 0.41 ms, regardless of kernel size. This demonstrates that parallelization on the GPU effectively decouples execution time from kernel size, thanks to per-pixel threading and shared memory optimizations. Overall, the GPU provides orders-of-magnitude speedup over both CPU implementations, particularly for larger kernels where the computational load is greatest. The results also clearly demonstrate the tremendous performance gains achieved through GPU parallelization. The CUDA implementation consistently outperforms both CPU-based implementations, achieving speedups of up to 1180× relative to optimized C++ code and up to 700× relative to Python. As kernel size increases, the computational cost of the sequential CPU algorithms grows rapidly due to the nested sliding-window operations, whereas the GPU execution time remains nearly constant. This highlights the efficiency of the SIMT execution model and shared memory optimizations, which allow hundreds of threads to process individual pixels simultaneously. The consistent low execution times across all tested kernel sizes show that the GPU implementation scales far better than the CPU, making it highly suitable for computationally intensive, edge-preserving filters like Kuwahara.
