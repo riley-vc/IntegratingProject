@@ -211,6 +211,8 @@ This analysis shows that while both implementations leverage GPU parallelism and
 </div>
 At a kernel size of 7×7, all three implementations—CUDA, C++, and Python—produce virtually identical outputs. The filter effectively smooths noise while preserving edges, and any minor differences are imperceptible, arising only from rounding or implementation-specific pixel calculations. This confirms the correctness of the GPU-accelerated version relative to the CPU baselines.
 
+---
+
 Visually, all images look the same. To mathematically verify that our parallel implementations are producing correct results, we compared the output images of the GPU kernels against the baseline C++ CPU implementation. We used two standard image quality metrics:
 - **Mean Squared Error** `MSE`: Measures the average squared difference between pixel values. A value of $0$ indicates a perfect pixel-for-pixel match.
 - **Structural Similarity Index** `SSIM`: Measures the perceived similarity between two images. A value of $1.0$ indicates the images are structurally identical to the human eye.
@@ -224,8 +226,10 @@ Below are the results of our comparison among the different kernels:
 |  GPU CUDA vs Optimized GPU  | 0.00  | 1.0000   |
 
 CPU (C++) vs. GPU (CUDA & Optimized)
-**MSE**: 0.36
-**SSIM**: 0.9974
+- **MSE**: 0.36
+- **SSIM**: 0.9974
+  
+---
 
 The comparison shows a non-zero MSE ($0.36$) and an SSIM slightly below 1 ($0.9974$), indicating extremely minor numerical differences between the CPU and GPU outputs
 
@@ -235,9 +239,13 @@ As for the comparison between the GPUs, this confirms Algorithmic Equivalence. A
 
 <img width="964" height="506" alt="image" src="https://github.com/user-attachments/assets/97554da1-2c0a-4772-bf06-6690ab80ee84" />
 
+---
+
 This is backed up by this image that visualizes the spatial location of the errors. It is mostly black, with scattered "speckles" or noise patterns. Do note that the errors shown here are intensified by a factor of `50`. So the fact that the image is mostly black confirms that for the vast majority of the image, the CPU and GPU outputs are identical. The visible speckles represent the tiny floating-point rounding differences discussed earlier, occurring mostly in areas with high variance or texture transitions.
 
 Furthermore, the histogram reveals that the vast majority of pixels have a difference of 0, meaning a perfect match. While the remaining discrepancies are concentrated at a different value of 1, which is the expected result of floating-point rounding differences between CPU and GPU architectures. There are no structural errors or large deviations.
+
+---
 
 **Summary of Correctness**
 The high SSIM scores (>0.99) against the CPU baseline prove the GPU implementation faithfully reproduces the Kuwahara filter effect. The perfect match between the two GPU versions proves that our memory optimizations are robust and numerically stable.
