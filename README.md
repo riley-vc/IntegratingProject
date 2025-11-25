@@ -154,6 +154,18 @@ To filter a single pixel, the thread must read many neighboring pixels. For exam
 
 As expected, the execution time for the CPU implementations increases significantly with the kernel size. The Python implementation shows moderate scaling due to interpreter overhead and sequential execution, ranging from 77.76 ms for a 3×3 kernel to 213.09 ms for an 11×11 kernel. The C++ implementation, although optimized, still exhibits steep growth, from 48.88 ms at 3×3 to 485.24 ms at 11×11, illustrating the inherent computational cost of the nested-loop structure. In contrast, the GPU CUDA implementation maintains extremely low execution times, ranging only from 0.11 ms to 0.41 ms, regardless of kernel size. This demonstrates that parallelization on the GPU effectively decouples execution time from kernel size, thanks to per-pixel threading and shared memory optimizations. Overall, the GPU provides orders-of-magnitude speedup over both CPU implementations, particularly for larger kernels where the computational load is greatest. The results also clearly demonstrate the tremendous performance gains achieved through GPU parallelization. The CUDA implementation consistently outperforms both CPU-based implementations, achieving speedups of up to 1180× relative to optimized C++ code and up to 700× relative to Python. As kernel size increases, the computational cost of the sequential CPU algorithms grows rapidly due to the nested sliding-window operations, whereas the GPU execution time remains nearly constant. This highlights the efficiency of the SIMT execution model and shared memory optimizations, which allow hundreds of threads to process individual pixels simultaneously. The consistently low execution times across all tested kernel sizes show that the GPU implementation scales far better than the CPU, making it highly suitable for computationally intensive, edge-preserving filters like Kuwahara.
 
+---
+
+**Graph of Execution times across different Kernels**
+<img width="857" height="547" alt="image" src="https://github.com/user-attachments/assets/e3c9e63e-185f-4549-96d7-14d2a79da9fb" />
+
+---
+
+**Screenshots of Outputs of runs**
+<img width="965" height="733" alt="image" src="https://github.com/user-attachments/assets/164dbb94-31db-45ac-9f9d-475825e18f06" />
+
+---
+
 ### System-Level Analysis
 
 Profiling both the standard and optimized CUDA implementations of the Kuwahara filter reveals key insights into kernel efficiency, memory management, and system overheads, highlighting the impact of optimization strategies on GPU performance.
@@ -188,11 +200,22 @@ Profiling both the standard and optimized CUDA implementations of the Kuwahara f
 | GPU Page Fault Groups         | 7 groups                    | 0 runtime page faults (prefetch)|
 | Memory Prefetching/Advice     | None                        | Uses prefetch/advise            |
 
+---
+These results can also be verified from Nsight Systems
+
+**Regular GPU Implementation NSYS Report**
+<img width="1743" height="930" alt="image" src="https://github.com/user-attachments/assets/64cbd321-35da-4a8f-bceb-62306a90932f" />
+
+---
+
+**Optimized GPU Implementation NSYS Report**
+<img width="1742" height="951" alt="image" src="https://github.com/user-attachments/assets/b3dda5ee-4590-4d90-b4f4-e48b5a2b8729" />
 
 ---
 
 This analysis shows that while both implementations leverage GPU parallelism and shared memory, the optimized version’s explicit memory management and kernel launch configuration dramatically improve performance, reduce latency, and enhance runtime predictability. 
 
+---
 
 ### Image Quality Comparison
 <div align = "center">
