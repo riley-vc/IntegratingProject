@@ -55,64 +55,55 @@ Included also is an `images` folder where it contains the following images:
 
 ---
 
-## C++ and Python Implementation Details
+## Methodology
 
-To accurately measure the performance gains of our GPU kernel, we implemented the Kuwahara filter in two standard CPU-based environments. These serve as our control group for benchmarking.
+### Algorithm: Kuwahara Filter
 
-1. Python Implementation 
+The Kuwahara filter works by calculating the mean and variance of color values in four overlapping sub-windows (quadrants) surrounding a target pixel. For every pixel $(x, y)$ in the image:
 
-* Serves as the algorithmic proof-of-concept and correctness verification.
+1. Divide the neighborhood into four rectangular regions overlapping at $(x, y)$.
+2. Calculate the arithmetic mean and standard deviation (variance) of the pixel intensities for each region.
+3. Select the region with the lowest variance (indicating the most homogeneous texture).
+4. Assign the mean color of that selected region to the central pixel $(x, y)$.
 
-* Libraries: NumPy for matrix operations and OpenCV (cv2) for image I/O.
+### Implementations
 
-* Methodology:
+- **Sequential (CPU)**: The C++ implementation (`kuwahara_cpu.cpp`) uses the OpenCV library. It iterates sequentially through every pixel using nested `for` loops (rows `y`, columns `x`). For each pixel, it iterates through the four sub-quadrants to calculate variance and selects the best mean. `copyMakeBorder` is used to handle edge padding.
+- **Parallel (GPU - CUDA)**: The CUDA implementations (`kuwahara_gpu.cu` and `kuwahara_gpu_optimized.cu`) offload the per-pixel calculation to the GPU. The image data is managed using Unified Memory (`cudaMallocManaged`), allowing access from both CPU and GPU.
 
-  * Implements the filter using standard nested loops to iterate over every pixel.
+### CUDA Implementation Details
 
-  * Calculates the mean and variance for the four sub-quadrants (top-left, top-right, bottom-left, bottom-right) for each pixel.
+The core transformation from sequential to parallel lies in the independence of the pixel calculations. Since the output value of a pixel $(x, y)$ depends only on its neighbors in the input image (read-only), every pixel can be processed simultaneously.
 
-2. C++ Implementation
+Highlight of the Conversion:
 
-* Provides a "fair" high-performance CPU baseline. Unlike Python, C++ is compiled and optimized, which represents how a standard CPU-based image processing application would typically run.
+- **Sequential Part**: The C++ CPU code uses a double loop to visit pixels:
+```
+for (int y = 0; y < src.rows; y++) {
+    for (int x = 0; x < src.cols; x++) {
+         // Process pixel (x,y)
+    }
+}
+```
+- **Parallel Part**: In CUDA, these loops are removed. Instead, a grid of threads is launched. The coordinates `(x, y)` are calculated derived from the thread and block indices:
+```
+int x = blockIdx.x * blockDim.x + threadIdx.x;
+int y = blockIdx.y * blockDim.y + threadIdx.y;
+if (x < width && y < height) {
+    // Process pixel (x,y)
+}
+```
 
-* Methodology:
+**Optimized Parallel Strategy (Shared Memory)**: The optimized kernel `kuwahara_gpu_optimized.cu` addresses the bottleneck of Global Memory latency.
 
-* Written in standard C++11.
-
-  * Utilizes the exact same sliding window logic as the CUDA kernel but runs sequentially on the host CPU.
-
-  * The C++ implementation is still bound by the sequential nature of the CPU processing one pixel (or small groups of pixels) at a time, scaling poorly as image resolution or kernel size increases.
-
-
-## CUDA Implementation Details
-
-### The Algorithm
-For every pixel $(x, y)$ in the image, the filter considers a window of size $W$ (e.g., $5 \times 5$, $7 \times 7$). The window is divided into four overlapping sub-regions (quadrants). The algorithm:
-1.  Calculates the **mean** and **variance** of intensity for each of the four quadrants.
-2.  Identifies the quadrant with the **minimum variance** (the most homogeneous region).
-3.  Sets the central pixel's value to the **mean** of that minimum-variance quadrant.
-
-### Parallel Strategy (SIMT)
-* **Grid Topology:** A 2D grid of thread blocks is launched.
-* **Granularity:** One CUDA thread is responsible for computing one output pixel.
-* **Shared Memory Optimization:**
-    * Instead of every thread reading 25+ pixels from global memory (for a 5x5 window), threads in a block cooperate to load a "tile" of the image into on-chip Shared Memory.
-    * This tile includes a **"halo"** (apron) of extra pixels required for the boundary conditions of the thread block.
-    * All statistical calculations are performed by reading from the blazing-fast shared memory.
-
+1. **Tiling**: The image is divided into tiles processed by CUDA blocks (e.g., 16x16 threads).
+2. **Shared Memory Loading**: Each block loads not just its own pixels, but also the necessary "halo" (border pixels required by the filter radius) into fast Shared Memory (`__shared__ unsigned char smem[]`).
+3. **Computation**: All variance and mean calculations are performed by reading from Shared Memory rather than slow Global Memory, significantly reducing memory bandwidth pressure.
 ---
-
-## Prerequisites
-
-To build and run this project, you need:
-* **Hardware:** NVIDIA GPU (Compute Capability 5.0 or higher recommended).
-* **Compiler:** `nvcc` (NVIDIA CUDA Compiler) and `g++`.
-* **Libraries:** * OpenCV (C++ core) - *Used for Image I/O only*.
-    * (Optional) `stb_image` if OpenCV is not used.
 
 ## Results and Discussion
 ### Overview of Setup 
-* **Test image:** A portrait image from wikipedia is used as the primary test image. The image was also used in https://github.com/yoch/pykuwahara, one of the primary references and baselines for this project, hence the developers decided to use the same image for reference. The image has a size of 512 x 512 pixels and approximately 462 KB.
+* **Test image:** A portrait image from Wikipedia is used as the primary test image. The image was also used in https://github.com/yoch/pykuwahara, one of the primary references and baselines for this project, hence the developers decided to use the same image for reference. The image has a size of 512 x 512 pixels and approximately 462 KB.
   <div align ="center">
   <img width="512" height="512" alt="Lenna_(test_image)" src="https://github.com/user-attachments/assets/f9c3d889-7ac3-44ed-81f9-c0e8c80ab6dc" />
   </div>
