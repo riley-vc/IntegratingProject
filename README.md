@@ -12,7 +12,7 @@
 
 ---
 
-## Abstract
+## 1.1 Abstract
 The **Kuwahara filter** is an advanced, non-linear, edge-preserving smoothing filter used in image processing to reduce noise while maintaining sharp edges. Unlike standard Gaussian blurs, the Kuwahara filter calculates the mean and variance of four overlapping sub-regions for every single pixel, making it computationally exhaustive on sequential CPUs.
 
 This project focuses on the implementation and performance analysis of the Kuwahara Filter, a non-linear smoothing filter used in image processing for noise reduction that preserves edges. The primary objective is to demonstrate the computational advantages of parallel computing architectures over traditional sequential methods.
@@ -29,7 +29,7 @@ The project implements and compares four different kernels to apply the filter t
 
 ---
 
-## Repository Details.
+## 1.2 Repository Details.
 
 The repository includes a multitude of files that are important for the project. The table below shows each file and what it contains:
 
@@ -55,9 +55,9 @@ Included also are `images`, which are the images that are either generated or us
 
 ---
 
-## Methodology
+## 2 Methodology
 
-### Algorithm: Kuwahara Filter
+### 2.1 Algorithm: Kuwahara Filter
 
 The Kuwahara filter works by calculating the mean and variance of color values in four overlapping sub-windows (quadrants) surrounding a target pixel. For every pixel $(x, y)$ in the image:
 
@@ -66,7 +66,7 @@ The Kuwahara filter works by calculating the mean and variance of color values i
 3. Select the region with the lowest variance (indicating the most homogeneous texture).
 4. Assign the mean color of that selected region to the central pixel $(x, y)$.
 
-### Implementations
+### 2.2 Implementations
 
 The core transformation in this project lies in moving from a sequential execution model (CPU) to a data-parallel execution model (GPU). Because the Kuwahara filter calculates a new color for a pixel based solely on its neighbors in the original image, every single pixel can be processed independently. This property allows us to assign one GPU thread to every pixel in the image.
 
@@ -81,7 +81,7 @@ for (int y = 0; y < src.rows; y++) {
 }
 ```
 
-### CUDA Implementation Details
+### 2.3 CUDA Implementation Details
 
 In the CUDA implementation, we remove the loops entirely. Instead, we launch a "Grid" of thousands of threads simultaneously. Each thread is given a unique ID and is responsible for calculating exactly one pixel. We calculate the pixel coordinates $(x, y)$ using the thread's position within its specific block and the block's position within the grid:
 
@@ -110,9 +110,9 @@ To filter a single pixel, the thread must read many neighboring pixels. For exam
 3. **Computation**: All variance and mean calculations are performed by reading from Shared Memory rather than slow Global Memory, significantly reducing memory bandwidth pressure.
 ---
 
-## Results and Discussion
+## 3 Results and Discussion
 
-### Overview of Setup 
+### 3.1 Overview of Setup 
 * **Test image:** A portrait image from Wikipedia is used as the primary test image. The image was also used in https://github.com/yoch/pykuwahara, one of the primary references and baselines for this project; hence, the developers decided to use the same image for reference. The image has a size of 512 x 512 pixels and approximately 462 KB.
   <div align ="center">
   <img width="512" height="512" alt="Lenna_(test_image)" src="https://github.com/user-attachments/assets/f9c3d889-7ac3-44ed-81f9-c0e8c80ab6dc" />
@@ -126,7 +126,23 @@ To filter a single pixel, the thread must read many neighboring pixels. For exam
   * Python implementation: *time.perf_counter()*
   * CUDA GPU implementation: *cudaEventRecord(start), kernel launch, cudaEventRecord(stop), cudaEventElapsedTime(&ms, start, stop)*
  
-### Execution Time Summary and Performance vs. Kernel Size
+### 3.2 Execution Time Summary and Performance vs. Kernel Size
+
+<div align = "center">
+**Outputs of different Kernels**
+ 
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/4a9165f5-9961-4e4a-a1de-cb7603e261a9" width="150"/></td>
+    <td><img src="https://github.com/user-attachments/assets/83cc130d-446a-4876-a7c9-80a5fa3cc358" width="150"/></td>
+    <td><img src="https://github.com/user-attachments/assets/fa80e7c7-a3ee-4722-a544-2cbfd2eeba74" width="150"/></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/0c3d12ee-f901-405a-a0fe-2f9ad3cb8a95" width="150"/></td>
+    <td><img src="https://github.com/user-attachments/assets/d42da223-c6cd-462b-b146-5d46d68fa269" width="150"/></td>
+  </tr>
+</table>
+</div>
 
 <div align = "center">
 
@@ -166,31 +182,31 @@ As expected, the execution time for the CPU implementations increases significan
 
 ---
 
-### System-Level Analysis
+### 3.3 System-Level Analysis
 
 Profiling both the standard and optimized CUDA implementations of the Kuwahara filter reveals key insights into kernel efficiency, memory management, and system overheads, highlighting the impact of optimization strategies on GPU performance.
 
-#### Kernel Execution Performance
+#### 3.3.1 Kernel Execution Performance
 
 - The kernel execution for the standard implementation (`kuwaharaShared`) averages 681 μs per call with notable variance (stddev ~583 μs), reflecting less consistent performance. In contrast, the optimized kernel reduces average execution time to approximately 209 μs with very low variance (stddev ~972 ns), indicating both faster and more predictable processing.
 - This reduction is primarily driven by improved thread and block configurations, efficient use of shared memory, and minimized memory access latency in the optimized version.
 
-#### Memory Transfer and Unified Memory Paging
+#### 3.3.2 Memory Transfer and Unified Memory Paging
 
 - The standard implementation performs frequent unified memory operations, including 23 host-to-device transfers and 14 device-to-host transfers, moving over 1 MB and 768 KB respectively. The kernel also incurs 7 GPU page fault groups increased latency.
 - Conversely, the optimized version consolidates memory transfers into a single large transfer in each direction (~768 KB), greatly reducing the overhead associated with page migrations and memory transfers. Prefetching via `cudaMemPrefetchAsync` and memory advice (`cudaMemAdvise`) proactively reduces runtime page faults and enhances data locality on the device, contributing to lower kernel runtime and increased efficiency.
 
-#### Unified Memory Management and API Overheads
+#### 3.3.3 Unified Memory Management and API Overheads
 
 - Both implementations experience significant overhead from unified memory allocation (`cudaMallocManaged`), which dominates the CUDA API call time. However, the optimized code’s explicit prefetch and advise calls reduce the latency impact during kernel execution, enabling better overlap and fewer synchronization stalls compared to the standard code.
 - Kernel launch overheads and synchronization times are lower and more stable in the optimized implementation, reflecting smoother GPU workflow.
 
-#### System-Level Behavior and Resource Utilization
+#### 3.3.4 System-Level Behavior and Resource Utilization
 
 - System call profiling shows high time spent in `poll` and `ioctl`, characteristic of GPU-bound programs waiting on kernel completions. This behavior is intrinsic to workloads with GPU offload and does not indicate inefficiency.
 - The lower variance in kernel runtime and memory transfer consolidation in the optimized version translates into superior throughput and scalability, making it better suited for real-time image processing tasks requiring consistent execution.
 
-#### Comparative Overview of Key Metrics
+#### 3.3.5 Comparative Overview of Key Metrics
 
 | Metric                        | Standard CUDA                | Optimized CUDA                  |
 |-----------------------------|-----------------------------|--------------------------------|
@@ -201,23 +217,22 @@ Profiling both the standard and optimized CUDA implementations of the Kuwahara f
 | Memory Prefetching/Advice     | None                        | Uses prefetch/advise            |
 
 ---
-These results can also be verified from Nsight Systems
+These results can also be verified from Nsight Systems:
 
 **Regular GPU Implementation NSYS Report**
 <img width="1743" height="930" alt="image" src="https://github.com/user-attachments/assets/64cbd321-35da-4a8f-bceb-62306a90932f" />
 
----
-
 **Optimized GPU Implementation NSYS Report**
 <img width="1742" height="951" alt="image" src="https://github.com/user-attachments/assets/b3dda5ee-4590-4d90-b4f4-e48b5a2b8729" />
 
+With the different NSYS reports shown above, we can see that the optimized kernel only ran a portion of the unoptimized GPU kernel. It is 1/5 of the kernel runtime of the GPU kernel.
 ---
 
 This analysis shows that while both implementations leverage GPU parallelism and shared memory, the optimized version’s explicit memory management and kernel launch configuration dramatically improve performance, reduce latency, and enhance runtime predictability. 
 
 ---
 
-### Image Quality Comparison
+## 4 Correctness, Verification, and Image Quality Comparison
 <div align = "center">
  
 <table>
@@ -273,15 +288,29 @@ Furthermore, the histogram reveals that the vast majority of pixels have a diffe
 **Summary of Correctness**
 The high SSIM scores (>0.99) against the CPU baseline prove the GPU implementation faithfully reproduces the Kuwahara filter effect. The perfect match between the two GPU versions proves that our memory optimizations are robust and numerically stable.
 
+---
 
-## Challenges and Solution
-
-## Conclusion
+## 5 Conclusion
 
 The Kuwahara filter is characterized by high arithmetic intensity and inherently independent pixel computations, making it an ideal candidate for SIMT-based GPU acceleration. Each output pixel can be computed independently, providing a perfect parallelism grain. The use of shared memory tiling drastically reduces redundant global memory accesses by approximately K² for a kernel of size K×K, allowing threads within a block to efficiently share data. 
 
 CPU performance is inherently limited by sequential execution and repeated global memory accesses, while Python suffers additional overhead from interpretation and dynamic memory management. In contrast, the GPU implementation leverages massive parallelism, low-latency shared memory, and efficient thread scheduling, resulting in significant speedups while still producing nearly identical outputs. This demonstrates that the Kuwahara filter aligns exceptionally well with the GPU execution model.
 
+---
+
+## 5.1 Challenges and Solutions
+
+This portion tackles the different problems encountered by the group members and how they were solved.
+
+- **Carandang, Matthew Ryan**: A challenge with the CUDA C++ implemnentation was actually figuring out where to start. Since we already have the Python and C++ implementations, I had a good idea of where to start and actually parallelize the Kuwahara filter. After knowing where to start, I had the issue of actually programming and being careful with the different memory access, especially when doing the unified memory portion, as well as doing the kernel itself. But when things got rolling, and I was understanding more of the concepts, not only about the Kuwahara filter but in CUDA programming as well, progress was being made. After that, I had to make it efficient with different optimizations we learned in class, as well as using shared memory, which also made it quite challenging to learn new concepts, but after learning about it, we were able to solve the different problems that came up with the CUDA implementation. 
+- **Veracruz, Sean Riley**: A major challenge with the Python implementation was achieving acceptable performance for an algorithm as computationally heavy as the Kuwahara filter. The filter requires computing local means and variances for four overlapping quadrants around every pixel, which, if implemented using raw Python loops, would be far too slow. To address this, the Python version was rewritten using  optimized NumPy operations and OpenCV’s cv2.boxFilter, which internally uses fast C/C++ routines. By restructuring the logic so that variance is computed using vectorized operations (src_sq = src ** 2 and mean_sq - mean**2) and by utilizing NumPy masking to assign quadrant results efficiently, the implementation avoids Python-level loops entirely. While still slower than the CUDA versions, these optimizations allowed the Python baseline to remain accurate, stable, and fast enough for meaningful comparison.
+- **Yap, Rafael Subo**: the only challenge I faced in the C++ implementation, since we go through every pixel, was the boundary checking, cause I didn't do it at first, and I didn't notice. This was eventually solved through trial and error.
+
+---
+
+## 6 Demo Video Link
 
 
+## 7 References
+- 
 
