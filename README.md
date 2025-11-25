@@ -15,28 +15,44 @@
 ## Abstract
 The **Kuwahara filter** is an advanced, non-linear, edge-preserving smoothing filter used in image processing to reduce noise while maintaining sharp edges. Unlike standard Gaussian blurs, the Kuwahara filter calculates the mean and variance of four overlapping sub-regions for every single pixel, making it computationally exhaustive on sequential CPUs.
 
-This project implements the Kuwahara filter from scratch using the **GPU/CUDA (SIMT)** paradigm. By assigning one CUDA thread to each output pixel and utilizing **Shared Memory tiling**, we aim to overcome the memory bandwidth bottlenecks inherent in the algorithm and demonstrate significant speedups compared to sequential CPU implementations.
+This project focuses on the implementation and performance analysis of the Kuwahara Filter, a non-linear smoothing filter used in image processing for noise reduction that preserves edges. The primary objective is to demonstrate the computational advantages of parallel computing architectures over traditional sequential methods.
 
-## Project Goals
-1.  **Parallelize the Sliding Window:** Convert the $O(N^2)$ nested-loop structure into a data-parallel SIMT kernel.
-2.  **Optimize Memory Access:** Implement **Shared Memory Tiling** with halo (border) pixel management to minimize global memory latency.
-3.  **Benchmark:** Quantify the performance gap (execution time in ms) between the sequential CPU baseline and the optimized GPU kernel.
+The project implements and compares four different kernels to apply the filter to an image:
+
+- **CPU Kernel (Python)**: A baseline high-level implementation.
+
+- **CPU Kernel (C++)**: A sequential, compiled implementation for a stronger baseline.
+
+- **GPU Kernel (CUDA C++)**: A parallel implementation utilizing Global/Unified Memory.
+
+- **Optimized GPU Kernel (CUDA C++)**: An optimized parallel implementation utilizing Shared Memory and memory prefetching.
 
 ---
 
 ## Repository Details.
 
-The repository includes a comprehensive Jupyter Notebook (IntegratingProject.ipynb) that orchestrates the entire project:
+The repository includes a multitude of files that are important for the project. The table below shows each file and what it contains:
 
-* **Environment Setup**: Automatically installs dependencies (libopencv-dev) and configures the NVCC compiler.
+| File | Description|
+|--------|---------------|
+| `IntegratingProject.ipynb` | Contains all kernel implementations of the Kuwahara filter. Simulates the environment to run and compare the different kernels through Google Colab |
+| `kuwahara.cpp` | Contains the `C++` implementation of the Kuwahara filter |
+| `kuwahara.py` | Contains the `Python` implementation of the Kuwahara filter |
+| `kuwahara_gpu.cu` | Contains the `CUDA C++` implementation of the Kuwahara filter |
+| `kuwahara_gpu_optimized.cu` | Contains the **Optimized** `CUDA C++` implementation of the kuwahara filter |
+| `kuwahara_gpu.nsys-rep` | Contains the report for the `CUDA C++` implementation of the kuwahara filter that can be viewed using Nvidia NSight Systems |
+| `kuwahara_gpu_optimized.nsys-rep` | Contains the report for the **Optimized** `CUDA C++` implementation of the kuwahara filter that can be viewed using Nvidia NSight Systems |
 
-* **Compilation**: Compiles both the C++ baseline and the CUDA kernel directly within the notebook.
+Included also is an `images` folder where it contains the following images:
 
-* **Execution & Timing**: Runs all three implementations on the same input image and captures execution time.
+| File | Description|
+|--------|---------------|
+| `test.jpg` | The base image without filter. This is the image on which all kernels will be applying the filter on. |
+| `cpu-cpp-output.jpg` | The output image of the `C++` Kernel with the filter applied. |
+| `cpu-py-output.jpg` | The output image of the `Python` Kernel with the filter applied. |
+| `gpu-cuda-output.jpg` | The output image of the `CUDA C++` Kernel with the filter applied. |
+| `gpu-optimizedcuda-output.jpg` | The output image of the **Optimized** `Cuda C++` Kernel with the filter applied. |
 
-* **Visualization**: Displays the input, noisy image, and the filtered results side-by-side for visual quality comparison.
-
-* **Benchmarking**: Generates comparative graphs showing the execution time vs. kernel radius for Python, C++, and CUDA.
 ---
 
 ## C++ and Python Implementation Details
