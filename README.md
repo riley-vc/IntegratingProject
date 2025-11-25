@@ -137,7 +137,45 @@ To build and run this project, you need:
 As expected, the execution time for the CPU implementations increases significantly with the kernel size. The Python implementation shows moderate scaling due to interpreter overhead and sequential execution, ranging from 77.76 ms for a 3×3 kernel to 213.09 ms for an 11×11 kernel. The C++ implementation, although optimized, still exhibits steep growth, from 48.88 ms at 3×3 to 485.24 ms at 11×11, illustrating the inherent computational cost of the nested-loop structure. In contrast, the GPU CUDA implementation maintains extremely low execution times, ranging only from 0.11 ms to 0.41 ms, regardless of kernel size. This demonstrates that parallelization on the GPU effectively decouples execution time from kernel size, thanks to per-pixel threading and shared memory optimizations. Overall, the GPU provides orders-of-magnitude speedup over both CPU implementations, particularly for larger kernels where the computational load is greatest. The results also clearly demonstrate the tremendous performance gains achieved through GPU parallelization. The CUDA implementation consistently outperforms both CPU-based implementations, achieving speedups of up to 1180× relative to optimized C++ code and up to 700× relative to Python. As kernel size increases, the computational cost of the sequential CPU algorithms grows rapidly due to the nested sliding-window operations, whereas the GPU execution time remains nearly constant. This highlights the efficiency of the SIMT execution model and shared memory optimizations, which allow hundreds of threads to process individual pixels simultaneously. The consistent low execution times across all tested kernel sizes show that the GPU implementation scales far better than the CPU, making it highly suitable for computationally intensive, edge-preserving filters like Kuwahara.
 
 ### System-Level Analysis
-stuff from nvprof
+
+Profiling both the standard and optimized CUDA implementations of the Kuwahara filter reveals key insights into kernel efficiency, memory management, and system overheads, highlighting the impact of optimization strategies on GPU performance.
+
+#### Kernel Execution Performance
+
+- The kernel execution for the standard implementation (`kuwaharaShared`) averages 681 μs per call with notable variance (stddev ~583 μs), reflecting less consistent performance. In contrast, the optimized kernel reduces average execution time to approximately 209 μs with very low variance (stddev ~972 ns), indicating both faster and more predictable processing.
+- This reduction is primarily driven by improved thread and block configurations, efficient use of shared memory, and minimized memory access latency in the optimized version.
+
+#### Memory Transfer and Unified Memory Paging
+
+- The standard implementation performs frequent unified memory operations, including 23 host-to-device transfers and 14 device-to-host transfers, moving over 1 MB and 768 KB respectively. The kernel also incurs 7 GPU page fault groups increased latency.
+- Conversely, the optimized version consolidates memory transfers into a single large transfer in each direction (~768 KB), greatly reducing the overhead associated with page migrations and memory transfers. Prefetching via `cudaMemPrefetchAsync` and memory advice (`cudaMemAdvise`) proactively reduces runtime page faults and enhances data locality on the device, contributing to lower kernel runtime and increased efficiency.
+
+#### Unified Memory Management and API Overheads
+
+- Both implementations experience significant overhead from unified memory allocation (`cudaMallocManaged`), which dominates the CUDA API call time. However, the optimized code’s explicit prefetch and advise calls reduce the latency impact during kernel execution, enabling better overlap and fewer synchronization stalls compared to the standard code.
+- Kernel launch overheads and synchronization times are lower and more stable in the optimized implementation, reflecting smoother GPU workflow.
+
+#### System-Level Behavior and Resource Utilization
+
+- System call profiling shows high time spent in `poll` and `ioctl`, characteristic of GPU-bound programs waiting on kernel completions. This behavior is intrinsic to workloads with GPU offload and does not indicate inefficiency.
+- The lower variance in kernel runtime and memory transfer consolidation in the optimized version translate into superior throughput and scalability, making it better suited for real-time image processing tasks requiring consistent execution.
+
+#### Comparative Overview of Key Metrics
+
+| Metric                        | Standard CUDA                | Optimized CUDA                  |
+|-----------------------------|-----------------------------|--------------------------------|
+| Kernel Time (avg per call)   | 681 μs (high variance)      | 209 μs (low variance)           |
+| Host-to-Device Transfers      | 23 transfers, 1 MB          | 1 transfer, 768 KB              |
+| Device-to-Host Transfers      | 14 transfers, 768 KB        | 1 transfer, 768 KB              |
+| GPU Page Fault Groups         | 7 groups                    | 0 runtime page faults (prefetch)|
+| Memory Prefetching/Advice     | None                        | Uses prefetch/advise            |
+
+
+---
+
+This analysis shows that while both implementations leverage GPU parallelism and shared memory, the optimized version’s explicit memory management and kernel launch configuration dramatically improve performance, reduce latency, and enhance runtime predictability. 
+
+
 ### Image Quality Comparison
 <div align = "center">
  
