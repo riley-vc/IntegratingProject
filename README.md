@@ -310,6 +310,6 @@ This portion tackles the different problems encountered by the group members and
 
 ---
 
-## 76 References
-- 
+## 6 References
+- https://github.com/yoch/pykuwahara
 
